@@ -4,7 +4,7 @@
   browser.mozilla = /mozilla/.test(userAgent) && !/webkit/.test(userAgent);
   browser.webkit = /webkit/.test(userAgent);
   browser.opera = /opera/.test(userAgent);
-  browser.msie = /msie/.test(userAgent);
+  browser.msie = ((navigator.appName == 'Microsoft Internet Explorer') || ((navigator.appName == 'Netscape') && (new RegExp("Trident/.*rv:([0-9]{1,}[\.0-9]{0,})").exec(navigator.userAgent) != null)));
 
   var defaults = {
     max: 4,
@@ -12,17 +12,12 @@
     hintText: 'Click to reveal completely'
   }
 
-  var alertShown = false
-
   $.fn.spoilerAlert = function(opts) {
     opts = $.extend(defaults, opts || {})
     var maxBlur = opts.max
     var partialBlur = opts.partial
     var hintText = opts.hintText
-    if (!alertShown && browser.msie) {
-      alert("WARNING, this site contains spoilers!")
-      alertShown = true
-    }
+
     return this.each(function() {
       var $spoiler = $(this)
       $spoiler.data('spoiler-state', 'shrouded')
@@ -40,8 +35,16 @@
       var applyBlur = function(radius) {
         currentBlur = radius
         if (browser.msie) {
-          var filterValue = "progid:DXImageTransform.Microsoft.Blur(pixelradius="+radius+")"
-          $spoiler.css('filter', filterValue)
+          if ($('html').is('.ie8, .ie9')) {
+            var filterValue = "progid:DXImageTransform.Microsoft.Chroma(Color=#222222) progid:DXImageTransform.Microsoft.Blur(pixelradius="+radius+")"
+            $spoiler.css('filter', filterValue)
+          } else {
+            if (radius > 0) {
+              $spoiler.addClass('spoiler-ie10')
+            } else {
+              $spoiler.removeClass('spoiler-ie10')
+            }
+          }
         } else if (browser.mozilla) {
           var filterValue = radius > 0 ? "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'>" +
             "<filter id='blur'><feGaussianBlur stdDeviation='" + radius + "' /></filter></svg>#blur\")" : ''
